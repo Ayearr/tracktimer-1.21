@@ -1,0 +1,38 @@
+{
+	"schemaVersion": 1,
+	"id": "tracktimer",
+	"version": "${version}",
+	"name": "tracktimer",
+	"description": "This is an example description! Tell everyone what your mod is about!",
+	"authors": [
+		"AisanaKoko(Ayearr)"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/tracktimer/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.ayearr.timer.Tracktimer"
+		],
+		"fabric-datagen": [
+			"com.ayearr.timer.TracktimerDataGenerator"
+		]
+
+	},
+	"mixins": [
+		"tracktimer.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.17.2",
+		"minecraft": "~1.21",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
