@@ -8,9 +8,9 @@ public class Tracktimer implements ModInitializer {
     public void onInitialize() {
         TrackCommandRegistrar.registerCommands();
 
-        // 每个 server tick 的末尾检查玩家位置
+
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            // 遍历当前在线玩家，触发计时检测
+
             server.getPlayerManager().getPlayerList().forEach(TrackManager::maybeTriggerTiming
             );
         });

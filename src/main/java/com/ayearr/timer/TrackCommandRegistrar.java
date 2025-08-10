@@ -76,7 +76,7 @@ public class TrackCommandRegistrar {
         });
     }
 
-    // tab 补全玩家 X 坐标
+
     private static CompletableFuture<Suggestions> suggestPlayerX(CommandContext<ServerCommandSource> ctx, SuggestionsBuilder builder) {
         ServerPlayerEntity player = ctx.getSource().getPlayer();
         if (player != null) {
@@ -85,7 +85,7 @@ public class TrackCommandRegistrar {
         return builder.buildFuture();
     }
 
-    // tab 补全玩家 Y 坐标
+
     private static CompletableFuture<Suggestions> suggestPlayerY(CommandContext<ServerCommandSource> ctx, SuggestionsBuilder builder) {
         ServerPlayerEntity player = ctx.getSource().getPlayer();
         if (player != null) {
@@ -94,7 +94,7 @@ public class TrackCommandRegistrar {
         return builder.buildFuture();
     }
 
-    // tab 补全玩家 Z 坐标
+
     private static CompletableFuture<Suggestions> suggestPlayerZ(CommandContext<ServerCommandSource> ctx, SuggestionsBuilder builder) {
         ServerPlayerEntity player = ctx.getSource().getPlayer();
         if (player != null) {
