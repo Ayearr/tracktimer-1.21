@@ -1,12 +1,19 @@
 package com.ayearr.timer;
 
+//import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 
+import java.util.concurrent.CompletableFuture;
+
 import static net.minecraft.server.command.CommandManager.literal;
+import static net.minecraft.server.command.CommandManager.argument;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
 
 public class TrackCommandRegistrar {
@@ -16,12 +23,12 @@ public class TrackCommandRegistrar {
 
             dispatcher.register(literal("trackset")
                     .requires(src -> src.getEntity() instanceof ServerPlayerEntity)
-                    .then(net.minecraft.server.command.CommandManager.argument("x1", integer())
-                            .then(net.minecraft.server.command.CommandManager.argument("y1", integer())
-                                    .then(net.minecraft.server.command.CommandManager.argument("z1", integer())
-                                            .then(net.minecraft.server.command.CommandManager.argument("x2", integer())
-                                                    .then(net.minecraft.server.command.CommandManager.argument("y2", integer())
-                                                            .then(net.minecraft.server.command.CommandManager.argument("z2", integer())
+                    .then(argument("x1", integer()).suggests(TrackCommandRegistrar::suggestPlayerX)
+                            .then(argument("y1", integer()).suggests(TrackCommandRegistrar::suggestPlayerY)
+                                    .then(argument("z1", integer()).suggests(TrackCommandRegistrar::suggestPlayerZ)
+                                            .then(argument("x2", integer()).suggests(TrackCommandRegistrar::suggestPlayerX)
+                                                    .then(argument("y2", integer()).suggests(TrackCommandRegistrar::suggestPlayerY)
+                                                            .then(argument("z2", integer()).suggests(TrackCommandRegistrar::suggestPlayerZ)
                                                                     .executes(ctx -> {
                                                                         int x1 = ctx.getArgument("x1", Integer.class);
                                                                         int y1 = ctx.getArgument("y1", Integer.class);
@@ -54,6 +61,45 @@ public class TrackCommandRegistrar {
                         return 1;
                     })
             );
+
+            dispatcher.register(literal("tracksetlaps")
+                    .then(argument("laps", integer())
+                            .executes(ctx -> {
+                                int laps = ctx.getArgument("laps", Integer.class);
+                                TrackManager.setLapTarget(laps);
+                                ServerCommandSource src = ctx.getSource();
+                                src.sendFeedback(() -> Text.literal("§a目标圈数已设置为 " + laps + " 圈！"), false);
+                                return 1;
+                            })
+                    )
+            );
         });
+    }
+
+    // tab 补全玩家 X 坐标
+    private static CompletableFuture<Suggestions> suggestPlayerX(CommandContext<ServerCommandSource> ctx, SuggestionsBuilder builder) {
+        ServerPlayerEntity player = ctx.getSource().getPlayer();
+        if (player != null) {
+            builder.suggest(player.getBlockX());
+        }
+        return builder.buildFuture();
+    }
+
+    // tab 补全玩家 Y 坐标
+    private static CompletableFuture<Suggestions> suggestPlayerY(CommandContext<ServerCommandSource> ctx, SuggestionsBuilder builder) {
+        ServerPlayerEntity player = ctx.getSource().getPlayer();
+        if (player != null) {
+            builder.suggest(player.getBlockY());
+        }
+        return builder.buildFuture();
+    }
+
+    // tab 补全玩家 Z 坐标
+    private static CompletableFuture<Suggestions> suggestPlayerZ(CommandContext<ServerCommandSource> ctx, SuggestionsBuilder builder) {
+        ServerPlayerEntity player = ctx.getSource().getPlayer();
+        if (player != null) {
+            builder.suggest(player.getBlockZ());
+        }
+        return builder.buildFuture();
     }
 }
