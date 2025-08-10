@@ -1,24 +1,20 @@
 package com.ayearr.timer;
 
 import net.fabricmc.api.ModInitializer;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 
 public class Tracktimer implements ModInitializer {
-	public static final String MOD_ID = "tracktimer";
+    @Override
+    public void onInitialize() {
+        TrackCommandRegistrar.registerCommands();
 
-	// This logger is used to write text to the console and the log file.
-	// It is considered best practice to use your mod id as the logger's name.
-	// That way, it's clear which mod wrote info, warnings, and errors.
-	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+        // 每个 server tick 的末尾检查玩家位置
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            // 遍历当前在线玩家，触发计时检测
+            server.getPlayerManager().getPlayerList().forEach(TrackManager::maybeTriggerTiming
+            );
+        });
 
-	@Override
-	public void onInitialize() {
-		// This code runs as soon as Minecraft is in a mod-load-ready state.
-		// However, some things (like resources) may still be uninitialized.
-		// Proceed with mild caution.
-
-		LOGGER.info("Hello Fabric world!");
-	}
+        System.out.println("[Tracktimer] Initialized.");
+    }
 }
