@@ -18,6 +18,7 @@ public class TrackManager {
     private static volatile BlockPos startPos1 = null;
     private static volatile BlockPos startPos2 = null;
 
+    // 每个玩家的独立计时数据
     private static final Map<UUID, Long> startTimes = new ConcurrentHashMap<>();
     private static final Map<UUID, Boolean> wasInArea = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> lapCount = new ConcurrentHashMap<>();
@@ -74,28 +75,28 @@ public class TrackManager {
             return newBar;
         });
 
-
+        // 设置进度与标题
         bossBar.setPercent(percent);
-        bossBar.setName(Text.literal(String.format("§aLAP: %d / %d  (%.0f%%)", currentLap, lapTarget, percent * 100)));
+        bossBar.setName(Text.literal(String.format("§a圈数: %d / %d 进度: %.0f%%", currentLap, lapTarget, percent * 100)));
 
-
+        // 根据状态动态变色
         if (currentLap >= lapTarget) {
-            bossBar.setColor(BossBar.Color.PURPLE);
+            bossBar.setColor(BossBar.Color.RED);
         } else if (currentLap == lapTarget - 1) {
-            bossBar.setColor(BossBar.Color.PINK);
+            bossBar.setColor(BossBar.Color.YELLOW);
         } else {
-            bossBar.setColor(BossBar.Color.WHITE);
+            bossBar.setColor(BossBar.Color.GREEN);
         }
 
         // 临近终点闪烁（>90% 且未完成）
-        /*if (percent >= 0.9f && currentLap < lapTarget) {
+        if (percent >= 0.9f && currentLap < lapTarget) {
             long time = System.currentTimeMillis() / 500; // 半秒切一次
             if (time % 2 == 0) {
                 bossBar.setColor(BossBar.Color.YELLOW);
             } else {
                 bossBar.setColor(BossBar.Color.PINK);
             }
-        }*/
+        }
 
         // 发送更新包
         player.networkHandler.sendPacket(BossBarS2CPacket.updateProgress(bossBar));
@@ -114,18 +115,18 @@ public class TrackManager {
         if (inArea && !wasInside) {
             long now = System.currentTimeMillis();
 
-
+            // 第一次经过 -> 开始计时并标记为第 1 圈（正在跑第1圈）
             if (!startTimes.containsKey(uuid)) {
                 startTimes.put(uuid, now);
                 lapCount.put(uuid, 1); // 表示正在第 1 圈
                 player.sendMessage(Text.literal("§e计时开始！开始第 1 圈").formatted(Formatting.GOLD), false);
                 updateBossBar(player, 1);
             } else {
-
+                // 已经在跑，计算下一次经过后会进入的圈数
                 int previousLap = lapCount.getOrDefault(uuid, 1); // 当前正在进行的圈
                 int nextLap = previousLap + 1;
 
-
+                // 如果 nextLap > lapTarget => 表示刚刚完成了第 lapTarget 圈（比赛结束）
                 if (nextLap > lapTarget) {
                     long elapsedMs = now - startTimes.get(uuid);
                     double seconds = elapsedMs / 1000.0;
@@ -134,7 +135,7 @@ public class TrackManager {
                                     "§a完成第 %d 圈，比赛结束！用时 %.3f 秒", lapTarget, seconds))
                             .formatted(Formatting.GREEN), false);
 
-
+                    // 1. BossBar 显示“Race Ended”
                     ServerBossBar bossBar = bossBars.get(uuid);
                     if (bossBar != null) {
                         bossBar.setName(Text.literal("§cRace Ended"));
@@ -142,38 +143,38 @@ public class TrackManager {
                         bossBar.setPercent(1.0f);
                     }
 
-
+                    // 2. 立即释放烟花
                     spawnFireworks(player);
 
-
+                    // 3. 使用 Thread.sleep 延时 2 秒后移除 BossBar
                     new Thread(() -> {
                         try {
-                            Thread.sleep(3000); // 延迟 2 秒
+                            Thread.sleep(2000); // 延迟 2 秒
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
 
-
+                        // 延时移除 BossBar 和清除相关数据
                         ServerBossBar bar = bossBars.remove(uuid);
                         if (bar != null) {
                             bar.removePlayer(player);
                             player.networkHandler.sendPacket(BossBarS2CPacket.remove(bar.getUuid()));
                         }
 
-
+                        // 清空数据
                         startTimes.remove(uuid);
                         lapCount.remove(uuid);
                         wasInArea.remove(uuid);
-                    }).start();
+                    }).start(); // 启动新线程执行延时任务
 
                 } else {
-
+                    // 进入下一圈（nextLap <= lapTarget）
                     lapCount.put(uuid, nextLap);
-
+                    // 提示：完成 previousLap 圈，开始 nextLap 圈
                     player.sendMessage(Text.literal(String.format("§a完成第 %d 圈，开始第 %d 圈", previousLap, nextLap))
                             .formatted(Formatting.GREEN), false);
 
-
+                    // 更新 BossBar 显示为 nextLap / lapTarget
                     updateBossBar(player, nextLap);
                 }
             }
@@ -182,7 +183,7 @@ public class TrackManager {
         wasInArea.put(uuid, inArea);
     }
 
-
+    // 在玩家身旁放烟花
     private static void spawnFireworks(ServerPlayerEntity player) {
         var world = player.getServerWorld();
         var pos = player.getBlockPos();
