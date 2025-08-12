@@ -1,6 +1,5 @@
 package com.ayearr.timer;
 
-//import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
@@ -21,8 +20,9 @@ public class TrackCommandRegistrar {
     public static void registerCommands() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 
+            // ========= /trackset（需要管理员权限） =========
             dispatcher.register(literal("trackset")
-                    .requires(src -> src.getEntity() instanceof ServerPlayerEntity)
+                    .requires(src -> src.hasPermissionLevel(2))
                     .then(argument("x1", integer()).suggests(TrackCommandRegistrar::suggestPlayerX)
                             .then(argument("y1", integer()).suggests(TrackCommandRegistrar::suggestPlayerY)
                                     .then(argument("z1", integer()).suggests(TrackCommandRegistrar::suggestPlayerZ)
@@ -53,7 +53,9 @@ public class TrackCommandRegistrar {
                     )
             );
 
+            // ========= /trackreset（需要管理员权限） =========
             dispatcher.register(literal("trackreset")
+                    .requires(src -> src.hasPermissionLevel(2))
                     .executes(ctx -> {
                         ServerCommandSource src = ctx.getSource();
                         TrackManager.resetAll();
@@ -62,7 +64,9 @@ public class TrackCommandRegistrar {
                     })
             );
 
+            // ========= /tracksetlaps（需要管理员权限） =========
             dispatcher.register(literal("tracksetlaps")
+                    .requires(src -> src.hasPermissionLevel(2))
                     .then(argument("laps", integer())
                             .executes(ctx -> {
                                 int laps = ctx.getArgument("laps", Integer.class);
@@ -73,9 +77,44 @@ public class TrackCommandRegistrar {
                             })
                     )
             );
+
+            // ========= /starttrack（需要管理员权限） =========
+            dispatcher.register(literal("starttrack")
+                    .requires(src -> src.hasPermissionLevel(2))
+                    .executes(ctx -> {
+                        ServerCommandSource source = ctx.getSource();
+                        if (source.getEntity() instanceof ServerPlayerEntity admin) {
+                            TrackManager.startRace(admin);
+                        } else {
+                            source.sendFeedback(() -> Text.literal("§c该命令只能玩家执行。"), false);
+                        }
+                        return 1;
+                    })
+            );
+
+            // ========= /trackjoin（所有玩家可用） =========
+            dispatcher.register(literal("trackjoin")
+                    .executes(ctx -> {
+                        if (ctx.getSource().getEntity() instanceof ServerPlayerEntity player) {
+                            TrackManager.joinRaceMode(player);
+                        } else {
+                            ctx.getSource().sendFeedback(() -> Text.literal("§c该命令只能玩家执行。"), false);
+                        }
+                        return 1;
+                    })
+            );
+            dispatcher.register(literal("trackleave")
+                    .executes(ctx -> {
+                        if (ctx.getSource().getEntity() instanceof ServerPlayerEntity player) {
+                            TrackManager.leaveRaceMode(player);
+                        } else {
+                            ctx.getSource().sendFeedback(() -> Text.literal("§c该命令只能玩家执行。"), false);
+                        }
+                        return 1;
+                    })
+            );
         });
     }
-
 
     private static CompletableFuture<Suggestions> suggestPlayerX(CommandContext<ServerCommandSource> ctx, SuggestionsBuilder builder) {
         ServerPlayerEntity player = ctx.getSource().getPlayer();
@@ -85,7 +124,6 @@ public class TrackCommandRegistrar {
         return builder.buildFuture();
     }
 
-
     private static CompletableFuture<Suggestions> suggestPlayerY(CommandContext<ServerCommandSource> ctx, SuggestionsBuilder builder) {
         ServerPlayerEntity player = ctx.getSource().getPlayer();
         if (player != null) {
@@ -93,7 +131,6 @@ public class TrackCommandRegistrar {
         }
         return builder.buildFuture();
     }
-
 
     private static CompletableFuture<Suggestions> suggestPlayerZ(CommandContext<ServerCommandSource> ctx, SuggestionsBuilder builder) {
         ServerPlayerEntity player = ctx.getSource().getPlayer();
